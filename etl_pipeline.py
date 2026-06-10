@@ -58,7 +58,7 @@ def transformar_y_guardar(partidos):
     df['form_local_str'] = df.get('home_team_form', 'WWDLW') # Mock default si la API no lo trae
     df['form_visita_str'] = df.get('away_team_form', 'LDWLW')
 
-    # 2. PASO A: Probabilidades Normalizadas del Mercado (70% del peso)
+    # 2. PASO A: Probabilidades Normalizadas del Mercado (100% de la cuota pura)
     df['raw_p_local'] = 1 / df['home_odds']
     df['raw_p_empate'] = 1 / df['draw_odds']
     df['raw_p_visita'] = 1 / df['away_odds']
@@ -69,7 +69,7 @@ def transformar_y_guardar(partidos):
     df['mkt_p_empate'] = df['raw_p_empate'] / df['overround']
     df['mkt_p_visita'] = df['raw_p_visita'] / df['overround']
 
-    # 3. PASO B: Probabilidades basadas en Rendimiento Reciente (30% del peso)
+    # 3. PASO B: Probabilidades basadas en Rendimiento Reciente (Distribución base)
     df['score_form_local'] = df['form_local_str'].apply(calcular_score_racha)
     df['score_form_visita'] = df['form_visita_str'].apply(calcular_score_racha)
     
@@ -85,10 +85,10 @@ def transformar_y_guardar(partidos):
     df['racha_p_local'] = df['racha_p_local'].clip(0, 1)
     df['racha_p_visita'] = df['racha_p_visita'].clip(0, 1)
 
-    # 4. PASO C: Combinación del Modelo Híbrido (70% Mercado + 30% Racha)
-    df['probabilidad_local'] = ((df['mkt_p_local'] * 0.70) + (df['racha_p_local'] * 0.30)) * 100
-    df['probabilidad_empate'] = ((df['mkt_p_empate'] * 0.70) + (df['racha_p_empate'] * 0.30)) * 100
-    df['probabilidad_visitante'] = ((df['mkt_p_visita'] * 0.70) + (df['racha_p_visita'] * 0.30)) * 100
+    # 4. PASO C: Combinación del Modelo Híbrido (80% Mercado + 20% Racha)
+    df['probabilidad_local'] = ((df['mkt_p_local'] * 0.80) + (df['racha_p_local'] * 0.20)) * 100
+    df['probabilidad_empate'] = ((df['mkt_p_empate'] * 0.80) + (df['racha_p_empate'] * 0.20)) * 100
+    df['probabilidad_visitante'] = ((df['mkt_p_visita'] * 0.80) + (df['racha_p_visita'] * 0.20)) * 100
 
     # Redondear y formatear
     df['probabilidad_local'] = df['probabilidad_local'].round(1)
@@ -96,7 +96,7 @@ def transformar_y_guardar(partidos):
     df['probabilidad_visitante'] = df['probabilidad_visitante'].round(1)
 
     # 5. Carga masiva (Bulk Load) a Supabase
-    df['fecha_partido'] = HOY  # <-- Aquí está la corrección clave para Pandas
+    df['fecha_partido'] = HOY
     
     df_supabase = df[[
         'fecha_partido', 'home_team', 'away_team', 
@@ -142,11 +142,11 @@ def enviar_correo(tabla_html):
     msg = MIMEMultipart()
     msg['From'] = GMAIL_USER
     msg['To'] = GMAIL_USER
-    msg['Subject'] = f"📊 Modelo Híbrido Penka - {HOY}"
+    msg['Subject'] = f"📊 Modelo Híbrido Penka (80/20) - {HOY}"
 
     html = f"""
     <div style="font-family:sans-serif; max-width:600px; margin:auto;">
-        <h2 style="color:#2c3e50;">Predicciones Combinadas (70% Mercado | 30% Racha)</h2>
+        <h2 style="color:#2c3e50;">Predicciones Combinadas (80% Mercado | 20% Racha)</h2>
         <p>Este modelo ajusta las probabilidades del mercado según el rendimiento reciente en la cancha:</p>
         <table style="width:100%; border-collapse:collapse;">
             <tr style="background-color:#ecf0f1;">
