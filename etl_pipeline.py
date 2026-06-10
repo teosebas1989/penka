@@ -17,11 +17,11 @@ HOY = datetime.today().strftime('%Y-%m-%d')
 
 def obtener_partidos():
     """Extract: Obtiene partidos y cuotas desde la API."""
-    url = "https://free-api-live-football-data.prapidapi.com/football-matches-by-date"
+    url = "https://free-api-live-football-data.p.rapidapi.com/football-matches-by-date"
     querystring = {"date": HOY}
     headers = {
         "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": "free-api-live-football-data.prapidapi.com"
+        "X-RapidAPI-Host": "free-api-live-football-data.p.rapidapi.com"
     }
     try:
         response = requests.get(url, headers=headers, params=querystring)
@@ -96,6 +96,8 @@ def transformar_y_guardar(partidos):
     df['probabilidad_visitante'] = df['probabilidad_visitante'].round(1)
 
     # 5. Carga masiva (Bulk Load) a Supabase
+    df['fecha_partido'] = HOY  # <-- Aquí está la corrección clave para Pandas
+    
     df_supabase = df[[
         'fecha_partido', 'home_team', 'away_team', 
         'probabilidad_local', 'probabilidad_empate', 'probabilidad_visitante'
@@ -106,7 +108,6 @@ def transformar_y_guardar(partidos):
         'fecha_partido', 'equipo_local', 'equipo_visitante', 
         'probabilidad_local', 'probabilidad_empate', 'probabilidad_visitante'
     ]
-    df_supabase['fecha_partido'] = HOY
 
     records = df_supabase.to_dict(orient='records')
     
